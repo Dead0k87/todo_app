@@ -1,7 +1,7 @@
 package com.example.springbootfirstwebapplication.controller;
 
 import com.example.springbootfirstwebapplication.model.Todo;
-import com.example.springbootfirstwebapplication.service.TodoService;
+import com.example.springbootfirstwebapplication.service.TodoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,7 +10,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.Valid;
 import java.text.SimpleDateFormat;
@@ -23,14 +26,19 @@ public class TodoController {
     // LoginService service = new LoginService(); // without Spring
     // Injected Automatically
 
+    //@Autowired
+    //TodoService service; // Spring can use Dependency Injection (autowired). When Spring service will find any instance of Autowired LoginService then take it and bring here
+
     @Autowired
-    TodoService service; // Spring can use Dependency Injection (autowired). When Spring service will find any instance of Autowired LoginService then take it and bring here
+    TodoRepository repository;
 
     @RequestMapping(value = "/list-todos", method = RequestMethod.GET)
     //это просто отображает содержимое базы данных (arraylist)
     public String showTodos(ModelMap model) {
         String name = getLoggedInUserName(model);
-        model.put("todos", service.retrieveTodo(name));
+        // model.put("todos", service.retrieveTodo(name));
+        model.put("todos", repository.findByUser(name));
+
         return "list-todos"; //  .jsp
     }
 
@@ -56,20 +64,28 @@ public class TodoController {
         if (result.hasErrors()) { // if errors user will be redirected back
             return "todo";//.jsp
         }
-        service.addTodo(getLoggedInUserName(model), todo.getDesc(), todo.getTargetDate(), // метод добавляет новое задание в список задача To Do
-                false);
+//        service.addTodo(getLoggedInUserName(model), todo.getDesc(), todo.getTargetDate(), // метод добавляет новое задание в список задача To Do
+//                false);
+
+        todo.setUser(getLoggedInUserName(model)); //setting name
+        repository.save(todo);// via JPA REPOSitory
+
         return "redirect:/list-todos"; // .jsp
     }
 
     @RequestMapping(value = "/delete-todo", method = RequestMethod.GET) // по этой ссылке принимается запрос (заход)
     public String deleteTodo(@RequestParam int id) {
-        service.deleteTodo(id);
+        //service.deleteTodo(id);
+        repository.deleteById(id);
         return "redirect:/list-todos"; //  .jsp
     }
 
     @RequestMapping(value = "/update-todo", method = RequestMethod.GET)
     public String showUpdateTodoPage(@RequestParam int id, ModelMap model) {
-        Todo todo = service.retrieveTodo(id); // находит по (form:hidden path="id")ID данный бин (то есть задание)
+
+        Todo todo = repository.findById(id).get(); // находит по (form:hidden path="id")ID данный бин (то есть задание)
+
+        //Todo todo = service.retrieveTodo(id); // находит по (form:hidden path="id")ID данный бин (то есть задание)
         // to add TODO bean details on a screen add it to a model
         model.put("todo", todo); // и засовывает его во View под аттрубутом todo
         return "todo"; //.jsp that edits Description
@@ -82,7 +98,8 @@ public class TodoController {
         if (result.hasErrors()) {
             return "todo"; //.jsp
         } else {
-            service.updateTodo(todo);
+            //service.updateTodo(todo);
+            repository.save(todo);
         }
         return "redirect:/list-todos"; //  .jsp
     }

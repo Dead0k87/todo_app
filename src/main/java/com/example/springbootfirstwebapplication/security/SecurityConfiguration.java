@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 
 //конфигурационный файл который создает доступ по каким ссылкам кт оможет входить куда
 @Configuration
+
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter { // configuration file will help to add more configuration
 //override few methods to add our own security configuration
 
@@ -22,9 +23,11 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter { // con
     //by overriding a method
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests().antMatchers("/login").permitAll()
+        http.authorizeRequests().antMatchers("/login", "/h2-console/**").permitAll()
                 .antMatchers("/", "/*todo*/**").access("hasRole('USER')").and()
                 .formLogin();
+        http.csrf().disable(); // spring securit thread
+        http.headers().frameOptions().disable(); // it run in frame so we disable it
     }
 
     //saying for /login permit anybody
